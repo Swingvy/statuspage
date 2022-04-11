@@ -1,0 +1,53 @@
+name: statuspage
+
+on:
+  schedule: 
+    - cron: "*/5 * * * *"
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: HRIS
+          - service: TIME
+          - service: LEAVE
+          - service: PAYROLL
+          - service: CLAIMS
+    env:
+      URL_KEY: ${{ matrix.service }}_URL
+      EMAIL_KEY: ${{ matrix.service }}_EMAIL
+      TIMEOUT: 10
+    steps:
+      - name: "[${{ matrix.service }}] set URL, EMAIL"
+        run: |
+          echo "::add-mask::${{ secrets[env.URL_KEY] }}"
+          echo "URL=${{ secrets[env.URL_KEY] }}" >> $GITHUB_ENV
+          echo "::add-mask::${{ secrets[env.EMAIL_KEY]}}"
+          echo "EMAIL=${{ secrets[env.EMAIL_KEY] }}" >> $GITHUB_ENV
+      - name: "[${{ matrix.service }}] fetch URL status"
+        run: |
+          echo http_code=$(curl "$URL" -w '%{http_code}' --max-time $TIMEOUT -s -o >(cat >&2)) 1>> $GITHUB_ENV
+      - name: "[${{ matrix.service }}] set SUBJECT"
+        run: |
+          if [[ $http_code == 200 ]]
+          then
+            echo "SUBJECT=UP" >> $GITHUB_ENV
+          else
+            echo "SUBJECT=DOWN" >> $GITHUB_ENV
+          fi
+      - name: "[${{ matrix.service }}] send email"
+        uses: dawidd6/action-send-mail@v3
+        with: 
+          server_address: email-smtp.us-west-2.amazonaws.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: ${{ env.SUBJECT }}
+          to: ${{ env.EMAIL }}
+          from: Swingvy <swingvy@gmail.com>
+          secure: true
