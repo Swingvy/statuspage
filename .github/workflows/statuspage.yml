@@ -41,7 +41,7 @@ jobs:
             echo "SUBJECT=DOWN" >> $GITHUB_ENV
           fi
       - name: "[${{ matrix.service }}] send email"
-        uses: dawidd6/action-send-mail@v3
+        uses: Swingvy/action-send-mail@v3
         with: 
           server_address: email-smtp.us-west-2.amazonaws.com
           server_port: 465
