@@ -1,0 +1,54 @@
+name: statuspage-time-functions
+
+on:
+  schedule: 
+    - cron: "*/10 * * * *"
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: TIME_CLOCKIN
+          - service: TIME_CLOCKOUT
+    env:
+      CMD_KEY: ${{ matrix.service }}_CMD
+      CMD_RESULT_KEY: ${{ matrix.service }}_CMD_RESULT
+      EMAIL_KEY: ${{ matrix.service }}_EMAIL
+      TIMEOUT: 10
+    steps:
+      - name: "[${{ matrix.service }}] set CMD, EMAIL"
+        run: |
+          echo $'::add-mask::${{ secrets[env.CMD_KEY] }}'
+          echo $'CMD=${{ secrets[env.CMD_KEY] }}' >> $GITHUB_ENV
+          echo $'::add-mask::${{ secrets[env.CMD_RESULT_KEY] }}'
+          echo $'CMD_RESULT=${{ secrets[env.CMD_RESULT_KEY] }}' >> $GITHUB_ENV
+          echo $'::add-mask::${{ secrets[env.EMAIL_KEY]}}'
+          echo $'EMAIL=${{ secrets[env.EMAIL_KEY] }}' >> $GITHUB_ENV
+      - name: "[${{ matrix.service }}] execute CMD"
+        run: |
+          result=$(bash -c "$CMD")
+          echo "result=$result" >> $GITHUB_ENV
+      - name: "[${{ matrix.service }}] set SUBJECT"
+        run: |
+          if [[ $result == "$CMD_RESULT" ]]
+          then
+            echo "SUBJECT=UP" >> $GITHUB_ENV
+          else
+            echo "SUBJECT=DOWN" >> $GITHUB_ENV
+          fi
+      - name: "[${{ matrix.service }}] send email"
+        uses: Swingvy/action-send-mail@v3
+        with: 
+          server_address: email-smtp.us-west-2.amazonaws.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: ${{ env.SUBJECT }}
+          to: ${{ env.EMAIL }}
+          from: Swingvy <swingvy@gmail.com>
+          secure: true
