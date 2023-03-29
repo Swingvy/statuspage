@@ -61,6 +61,8 @@ jobs:
         run: git config --global user.name ${{ github.actor }}
       - name: config user.email
         run: git config --global user.email swingvy.dev@gmail.com
+      - name: add
+        run: git add last_run_statuspage
       - name: commit
         run: git commit -m "statuspage run at $('cat' 'last_run_statuspage')"
       - name: push
