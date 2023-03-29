@@ -66,4 +66,4 @@ jobs:
       - name: commit
         run: git commit -m "statuspage run at $('cat' 'last_run_statuspage')"
       - name: push
-        run: git push
+        run: git push --force
