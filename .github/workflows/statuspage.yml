@@ -22,6 +22,8 @@ jobs:
       URL_KEY: ${{ matrix.service }}_URL
       EMAIL_KEY: ${{ matrix.service }}_EMAIL
       TIMEOUT: 10
+    permissions:
+      contents: write
     steps:
       - name: "[${{ matrix.service }}] set URL, EMAIL"
         run: |
@@ -51,3 +53,15 @@ jobs:
           to: ${{ env.EMAIL }}
           from: Swingvy <swingvy@gmail.com>
           secure: true
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: record last_run
+        run: date > last_run_statuspage
+      - name: config user.name
+        run: git config --global user.name ${{ github.actor }}
+      - name: config user.email
+        run: git config --global user.email swingvy.dev@gmail.com
+      - name: commit
+        run: git commit -m "statuspage run at $('cat' 'last_run_statuspage')"
+      - name: push
+        run: git push
