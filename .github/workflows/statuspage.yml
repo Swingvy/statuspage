@@ -54,7 +54,7 @@ jobs:
           from: Swingvy <swingvy@gmail.com>
           secure: true
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: Swingvy/checkout@v3
       - name: record last_run
         run: date > last_run_statuspage
       - name: config user.name
